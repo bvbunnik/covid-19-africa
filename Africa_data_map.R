@@ -6,6 +6,8 @@ library(sf)
 library(leaflet)
 library(RColorBrewer)
 library(classInt)
+library(broom)
+library(viridis)
 
 setwd("C:/temp/covid-19/Africa/")
 #download the dataset from the ECDC website to a local temporary file
@@ -47,7 +49,7 @@ cases_by_country$cumCases[is.na(cases_by_country$cumCases)] <- 0
 
 cases_by_country$cases_popup <- paste(cases_by_country$COUNTRY, cases_by_country$cumCases, "cases", sep = " ")
 
-breaks <- classIntervals(cases_by_country$cumCases, n = 10, style = "jenks")$brks
+breaks <- classIntervals(cases_by_country$cumCases, n = 9, style = "jenks")$brks
 pal <- colorBin(palette = "Blues", domain = NULL, bins = breaks, na.color = "#FFFFFF")
 
 leaflet(data=filter(cases_by_country, cumCases!=0)) %>%
@@ -55,5 +57,20 @@ leaflet(data=filter(cases_by_country, cumCases!=0)) %>%
   addTiles(urlTemplate = "",
            attribution = 'Copyright Scottish Government, contains Ordnance Survey data © Crown copyright and database right (2019)', options = providerTileOptions(minZoom = 1, maxZoom = 13)) %>%
   addPolygons(data = filter(cases_by_country, cumCases == 0), fillColor = "#FFFFFF", fillOpacity = 1, weight = 1, color = "#bdbdbd", label = ~cases_popup, labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"), textsize = "15px", direction = "auto"), highlightOptions = highlightOptions(color = "white", weight = 2, bringToFront = TRUE)) %>% 
-  addPolygons(fillColor = ~pal(cumCases), fillOpacity = 0.8, smoothFactor = 0.5, stroke = TRUE, weight = 1, color = "#bdbdbd", opacity = 1, label = ~cases_popup, labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"), textsize = "15px", direction = "auto"), highlightOptions = highlightOptions(color = "white", weight = 2, bringToFront = TRUE))
-  
+  addPolygons(fillColor = ~pal(cumCases), fillOpacity = 0.8, smoothFactor = 0.5, stroke = TRUE, weight = 1, color = "#bdbdbd", opacity = 1, label = ~cases_popup, labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"), textsize = "15px", direction = "auto"), highlightOptions = highlightOptions(color = "white", weight = 2, bringToFront = TRUE)) %>%
+  addLegend(pal=pal, values=~cumCases, position = "bottomleft", opacity = 0.8, title = "Latest total cumulative cases")
+
+
+
+#Other appraoch, not finished yet...
+library(geojsonio)
+africa <- geojson_read("Africa.geojson", what="sp")
+
+africa@data %<>% left_join(maxima[,c(9:13)], by=c("CODE"="Map_Code"))
+
+library(cartography)
+breaks <- classIntervals(cases_by_country$cumCases, n = 9, style = "jenks")$brks
+pal <- brewer.pal(9, name = "Blues")
+choroLayer(spdf = africa, df = africa@data, var = "cumCases", col = pal, breaks = breaks)
+labelLayer(spdf=africa, txt = "cumCases",col= "black", cex = 0.7,halo = TRUE, bg = "white", r = 0.1, show.lines = FALSE)
+title("Cumulative Cases per Country")
