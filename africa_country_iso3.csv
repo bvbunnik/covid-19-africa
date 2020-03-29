@@ -8,45 +8,47 @@ BUR,Burundi,BDI
 CAM,Cameroon,CMR
 CAP,Cape Verde,CPV
 CAR,Central African Republic,CAF
-CDI,Chad,TCD
-CHA,Comoros,COM
+CHA,Chad,TCD
+COM,Comoros,COM
 CNG,Congo-Brazzaville,COG
-COM,Cote d`Ivoire,CIV
-DJI,Democratic Republic of Congo,COD
-EGY,Djibouti,DJI
-EQG,Egypt,EGY
-ERI,Equatorial Guinea,GNQ
-ETH,Eritrea,ERI
-GAB,Ethiopia,ETH
-GAM,Gabon,GAB
-GHA,Gambia,GMB
-GIN,Ghana,GHA
-GUB,Guinea,GIN
-KEN,Guinea-Bissau,GNB
-LAJ,Kenya,KEN
+CDI,Cote d`Ivoire,CIV
+COD,Democratic Republic of Congo,COD
+DJI,Djibouti,DJI
+EGY,Egypt,EGY
+EQG,Equatorial Guinea,GNQ
+ERI,Eritrea,ERI
+ETH,Ethiopia,ETH
+GAB,Gabon,GAB
+GAM,Gambia,GMB
+GHA,Ghana,GHA
+GIN,Guinea,GIN
+GUB,Guinea-Bissau,GNB
+KEN,Kenya,KEN
 LES,Lesotho,LSO
 LIB,Liberia,LBR
 MAA,Libya,LBY
 MAD,Madagascar,MDG
 MAL,Malawi,MWI
-MAU,Mali,MLI
-MOR,Mauritania,MRT
-MOZ,Morocco,MAR
-NAM,Mozambique,MOZ
-NIG,Namibia,NAM
-NIR,Niger,NER
-RWA,Nigeria,NGA
-SEN,Rwanda,RWA
-SIL,Sao Tome and Principe,STP
-SOM,Senegal,SEN
-SOU,Sierra Leone,SLE
-STP,Somalia,SOM
-SUD,South Africa,ZAF
-SWA,Sudan,SDN
-TAN,Swaziland,SWZ
-TOG,Tanzania,TZA
-TUN,Togo,TGO
-UGA,Tunisia,TUN
-WES,Uganda,UGA
+MLI,Mali,MLI
+MAU,Mauritania,MRT
+MOR,Morocco,MAR
+MOZ,Mozambique,MOZ
+NAM,Namibia,NAM
+NIG,Niger,NER
+NIR,Nigeria,NGA
+RWA,Rwanda,RWA
+STP,Sao Tome and Principe,STP
+SEN,Senegal,SEN
+SIL,Sierra Leone,SLE
+SOM,Somalia,SOM
+SOU,South Africa,ZAF
+SUD,Sudan,SDN
+SWA,Swaziland,SWZ
+TAN,Tanzania,TZA
+TOG,Togo,TGO
+TUN,Tunisia,TUN
+UGA,Uganda,UGA
 ZAM,Zambia,ZMB
 ZIM,Zimbabwe,ZWE
+MUS,Mauritius,MUS
+SYC,Seychelles,SYC
