@@ -21,21 +21,31 @@ african_countries <- read.csv("africa_country_iso3.csv")
 african_iso3_codes <- african_countries$ISO3 
 
 #filter data to only include Africa continent
-africa_data <- data %>% filter(countryterritoryCode %in% african_iso3_codes)
+africa_data <- data %>% 
+  filter(countryterritoryCode %in% african_iso3_codes)
 
 
 #Convert date to actual date
 africa_data$dateRep <- as.Date(africa_data$dateRep, "%d/%m/%Y")
 
 #Calculate cumulative cases & deaths 
-africa_data %<>% group_by(countryterritoryCode) %>% arrange(countryterritoryCode,dateRep) %>% mutate(cumCases = cumsum(cases), cumDeaths=cumsum(deaths))
+africa_data %<>% 
+  group_by(countryterritoryCode) %>% 
+  arrange(countryterritoryCode,dateRep) %>% 
+  mutate(cumCases = cumsum(cases), cumDeaths=cumsum(deaths))
 
 africa_data %<>% left_join(african_countries, by=c("countryterritoryCode"="ISO3"))
 
 #test plot
-ggplot(africa_data %>% filter(dateRep > "2020-03-01"), aes(x=dateRep, y=cumCases, colour=countriesAndTerritories)) + geom_line(size=1.05) + theme(legend.position = "none")
+ggplot(africa_data %>% filter(dateRep > "2020-03-01"), aes(x=dateRep, y=cumCases)) + 
+  geom_line(col="DarkBlue", size=1.05) + 
+  facet_wrap(~countriesAndTerritories) +
+  scale_y_log10()
 
-maxima <- africa_data %>% group_by(countryterritoryCode) %>% filter(cumCases==max(cumCases),.preserve = T) %>% top_n(1,dateRep)
+maxima <- africa_data %>% 
+  group_by(countryterritoryCode) %>% 
+  filter(cumCases==max(cumCases),.preserve = T) %>% 
+  top_n(1,dateRep)
 
 #create map with latest cumulative cases
 cases_by_country <- sf::st_read("Africa.geojson") %>%
@@ -64,17 +74,20 @@ leaflet(data=filter(cases_by_country, cumCases!=0)) %>%
 
 #Other approach, not finished yet...
 library(geojsonio)
-africa <- geojson_read("Africa.geojson", what="sp")
+africa <- geojson_read("Africa1.geojson", what="sp")
 
-africa@data %<>% left_join(maxima[,c(9:13)], by=c("CODE"="Map_Code"))
+africa@data %<>% left_join(maxima[,c(9:13)], by=c("ISO_A3"="countryterritoryCode"))
+
+africa@data$cumCases[is.na(africa@data$cumCases)] <- 0
 
 library(cartography)
-breaks <- classIntervals(cases_by_country$cumCases, n = 9, style = "jenks")$brks
+breaks <- classIntervals(africa@data$cumCases, n = 9, style = "jenks", na.rm=T)$brks
 pal <- brewer.pal(9, name = "Blues")
-choroLayer(spdf = africa, df = africa@data, var = "cumCases", col = pal, breaks = breaks)
-labelLayer(spdf=africa, txt = "cumCases",col= "black", cex = 0.7,halo = TRUE, bg = "white", r = 0.1, show.lines = FALSE)
-title("Cumulative Cases per Country")
+choroLayer(spdf = africa, var = "cumCases", method="fisher-jenks", nclass = 9, legend.title.txt = "Cumulative Cases")
+labelLayer(spdf=africa, txt = "cumCases",col= "black", cex = 0.7,halo = TRUE, bg = "white", r = 0.1, show.lines = T, overlap = F)
+title("Latest Cumulative Cases per Country")
 
+africa@data$cumCases
 
 #Dt calculations
 Dt_Cases = africa_data %>% group_by(countriesAndTerritories) %>% arrange(countriesAndTerritories,dateRep) %>% mutate(Dt=7*log(2)/log(nth(cumCases,-1)/nth(cumCases,-8))) %>% summarise(Dt=max(Dt))
