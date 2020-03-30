@@ -62,7 +62,7 @@ leaflet(data=filter(cases_by_country, cumCases!=0)) %>%
 
 
 
-#Other appraoch, not finished yet...
+#Other approach, not finished yet...
 library(geojsonio)
 africa <- geojson_read("Africa.geojson", what="sp")
 
@@ -74,3 +74,9 @@ pal <- brewer.pal(9, name = "Blues")
 choroLayer(spdf = africa, df = africa@data, var = "cumCases", col = pal, breaks = breaks)
 labelLayer(spdf=africa, txt = "cumCases",col= "black", cex = 0.7,halo = TRUE, bg = "white", r = 0.1, show.lines = FALSE)
 title("Cumulative Cases per Country")
+
+
+#Dt calculations
+Dt_Cases = africa_data %>% group_by(countriesAndTerritories) %>% arrange(countriesAndTerritories,dateRep) %>% mutate(Dt=7*log(2)/log(nth(cumCases,-1)/nth(cumCases,-8))) %>% summarise(Dt=max(Dt))
+Dt_Deaths = africa_data %>% group_by(countriesAndTerritories) %>% arrange(countriesAndTerritories,dateRep) %>% mutate(Dt=7*log(2)/log(nth(cumDeaths,-1)/nth(cumDeaths,-8))) %>% summarise(Dt=max(Dt))
+
