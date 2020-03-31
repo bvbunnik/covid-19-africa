@@ -20,9 +20,11 @@ data <- read.csv(tf, stringsAsFactors = F)
 african_countries <- read.csv("africa_country_iso3.csv")
 african_iso3_codes <- african_countries$ISO3 
 
+WHO_africa_countries <- read_csv("WHO_country_list.csv")
+
 #filter data to only include Africa continent
 africa_data <- data %>% 
-  filter(countryterritoryCode %in% african_iso3_codes)
+  filter(countryterritoryCode %in% WHO_africa_countries$ISO3)
 
 
 #Convert date to actual date
@@ -34,7 +36,7 @@ africa_data %<>%
   arrange(countryterritoryCode,dateRep) %>% 
   mutate(cumCases = cumsum(cases), cumDeaths=cumsum(deaths))
 
-africa_data %<>% left_join(african_countries, by=c("countryterritoryCode"="ISO3"))
+africa_data %<>% left_join(WHO_africa_countries, by=c("countryterritoryCode"="ISO3"))
 
 #test plot
 ggplot(africa_data %>% filter(dateRep > "2020-03-01"), aes(x=dateRep, y=cumCases)) + 
@@ -78,13 +80,12 @@ africa <- geojson_read("Africa1.geojson", what="sp")
 
 africa@data %<>% left_join(maxima[,c(9:13)], by=c("ISO_A3"="countryterritoryCode"))
 
-africa@data$cumCases[is.na(africa@data$cumCases)] <- 0
 
 library(cartography)
 breaks <- classIntervals(africa@data$cumCases, n = 9, style = "jenks", na.rm=T)$brks
 pal <- brewer.pal(9, name = "Blues")
-choroLayer(spdf = africa, var = "cumCases", method="fisher-jenks", nclass = 9, legend.title.txt = "Cumulative Cases")
-labelLayer(spdf=africa, txt = "cumCases",col= "black", cex = 0.7,halo = TRUE, bg = "white", r = 0.1, show.lines = T, overlap = F)
+choroLayer(spdf = africa, var = "cumCases", method="fisher-jenks", nclass = 9, legend.title.txt = "Cumulative Cases", legend.title.cex = 1, legend.values.cex = 1)
+labelLayer(spdf=africa, txt = "cumCases",col= "black", cex = 0.9,halo = TRUE, bg = "white", r = 0.08, show.lines = T, overlap = F)
 title("Latest Cumulative Cases per Country")
 
 africa@data$cumCases
