@@ -16,19 +16,16 @@ GET("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv", authenticate
 #read the Dataset sheet into “R”. The dataset will be called "data".
 data <- read.csv(tf, stringsAsFactors = F)
 
-#African countries
-african_countries <- read.csv("africa_country_iso3.csv")
-african_iso3_codes <- african_countries$ISO3 
-
+#WHO Africa countries
 WHO_africa_countries <- read_csv("WHO_country_list.csv")
 
 #filter data to only include Africa continent
 africa_data <- data %>% 
   filter(countryterritoryCode %in% WHO_africa_countries$ISO3)
 
-
+names(africa_data)[1] <- "dateRep"
 #Convert date to actual date
-africa_data$dateRep <- as.Date(africa_data$dateRep, "%d/%m/%Y")
+africa_data$dateRep<- as.Date(africa_data$dateRep, "%d/%m/%Y")
 
 #Calculate cumulative cases & deaths 
 africa_data %<>% 
@@ -36,7 +33,14 @@ africa_data %<>%
   arrange(countryterritoryCode,dateRep) %>% 
   mutate(cumCases = cumsum(cases), cumDeaths=cumsum(deaths))
 
-africa_data %<>% left_join(WHO_africa_countries, by=c("countryterritoryCode"="ISO3"))
+africa_data %<>% ungroup()
+
+africa_data %<>% right_join(WHO_africa_countries, by=c("countryterritoryCode"="ISO3"))
+africa_data %<>% mutate(popData2018=ifelse(countryterritoryCode=="ERI",6050000,popData2018))
+
+
+africa_case_wide <- africa_data[,c(1,5,13)] %>% pivot_wider(names_from = Country, values_from = cases)
+africa_deaths_wide <- africa_data[,c(1,6,13)] %>% pivot_wider(names_from = Country, values_from = deaths)
 
 #test plot
 ggplot(africa_data %>% filter(dateRep > "2020-03-01"), aes(x=dateRep, y=cumCases)) + 
@@ -44,9 +48,15 @@ ggplot(africa_data %>% filter(dateRep > "2020-03-01"), aes(x=dateRep, y=cumCases
   facet_wrap(~countriesAndTerritories) +
   scale_y_log10()
 
+temp <- africa_data %>% select(-1) %>% replace(is.na(.), 0)
+temp$dateRep <- africa_data$dateRep
+africa_data <- temp
+
+africa_data$dateRep[is.na(africa_data$dateRep)] <- as.Date("2020-01-01")
+
 maxima <- africa_data %>% 
-  group_by(countryterritoryCode) %>% 
-  filter(cumCases==max(cumCases),.preserve = T) %>% 
+  group_by(Country) %>% 
+  filter(cumCases==max(cumCases, na.rm = F),.preserve = T) %>% 
   top_n(1,dateRep)
 
 #create map with latest cumulative cases
@@ -78,13 +88,17 @@ leaflet(data=filter(cases_by_country, cumCases!=0)) %>%
 library(geojsonio)
 africa <- geojson_read("Africa1.geojson", what="sp")
 
-africa@data %<>% left_join(maxima[,c(9:13)], by=c("ISO_A3"="countryterritoryCode"))
+africa@data %<>% left_join(maxima[,c(8:12)], by=c("ISO_A3"="countryterritoryCode"))
 
 
 library(cartography)
-breaks <- classIntervals(africa@data$cumCases, n = 9, style = "jenks", na.rm=T)$brks
+breaks <- classIntervals(africa@data$cumCases, n = 8, style = "jenks", na.rm=T)$brks
+breaks <- c(0,breaks)
+breaks[2]<-1
 pal <- brewer.pal(9, name = "Blues")
-choroLayer(spdf = africa, var = "cumCases", method="fisher-jenks", nclass = 9, legend.title.txt = "Cumulative Cases", legend.title.cex = 1, legend.values.cex = 1)
+pal[1]<-"#FFFFFF"
+choroLayer(spdf = africa, var = "cumCases", colNA = "grey", 
+           breaks=breaks, col=pal,legend.title.txt = "Cumulative Cases", legend.title.cex = 1, legend.values.cex = 1)
 labelLayer(spdf=africa, txt = "cumCases",col= "black", cex = 0.9,halo = TRUE, bg = "white", r = 0.08, show.lines = T, overlap = F)
 title("Latest Cumulative Cases per Country")
 
