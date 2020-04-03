@@ -8,6 +8,9 @@ library(RColorBrewer)
 library(classInt)
 library(broom)
 library(viridis)
+library(geojson)
+library(cartography)
+
 
 setwd("C:/temp/covid-19/Africa/")
 #download the dataset from the ECDC website to a local temporary file
@@ -60,38 +63,38 @@ maxima <- africa_data %>%
   top_n(1,dateRep)
 
 #create map with latest cumulative cases
-cases_by_country <- sf::st_read("Africa.geojson") %>%
-  st_transform(crs = st_crs("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
+# cases_by_country <- sf::st_read("Africa.geojson") %>%
+#   st_transform(crs = st_crs("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
+# 
+# cases_by_country <- cbind(cases_by_country, st_coordinates(st_centroid(cases_by_country)))
+# 
+# cases_by_country %<>% left_join(maxima[,c(9:13)], by=c("CODE"="Map_Code"))
+# 
+# cases_by_country$cumCases[is.na(cases_by_country$cumCases)] <- 0
+# 
+# cases_by_country$cases_popup <- paste(cases_by_country$COUNTRY, cases_by_country$cumCases, "cases", sep = " ")
+# 
+# breaks <- classIntervals(cases_by_country$cumCases, n = 9, style = "jenks")$brks
+# pal <- colorBin(palette = "Blues", domain = NULL, bins = breaks, na.color = "#FFFFFF")
+# 
+# leaflet(data=filter(cases_by_country, cumCases!=0)) %>%
+#   #setView(-3, 54.3, zoom = 5) %>% 
+#   addTiles(urlTemplate = "",
+#            attribution = 'Copyright Scottish Government, contains Ordnance Survey data © Crown copyright and database right (2019)', options = providerTileOptions(minZoom = 1, maxZoom = 13)) %>%
+#   addPolygons(data = filter(cases_by_country, cumCases == 0), fillColor = "#FFFFFF", fillOpacity = 1, weight = 1, color = "#bdbdbd", label = ~cases_popup, labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"), textsize = "15px", direction = "auto"), highlightOptions = highlightOptions(color = "white", weight = 2, bringToFront = TRUE)) %>% 
+#   addPolygons(fillColor = ~pal(cumCases), fillOpacity = 0.8, smoothFactor = 0.5, stroke = TRUE, weight = 1, color = "#bdbdbd", opacity = 1, label = ~cases_popup, labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"), textsize = "15px", direction = "auto"), highlightOptions = highlightOptions(color = "white", weight = 2, bringToFront = TRUE)) %>%
+#   addLegend(pal=pal, values=~cumCases, position = "bottomleft", opacity = 0.8, title = "Latest total cumulative cases")
 
-cases_by_country <- cbind(cases_by_country, st_coordinates(st_centroid(cases_by_country)))
-
-cases_by_country %<>% left_join(maxima[,c(9:13)], by=c("CODE"="Map_Code"))
-
-cases_by_country$cumCases[is.na(cases_by_country$cumCases)] <- 0
-
-cases_by_country$cases_popup <- paste(cases_by_country$COUNTRY, cases_by_country$cumCases, "cases", sep = " ")
-
-breaks <- classIntervals(cases_by_country$cumCases, n = 9, style = "jenks")$brks
-pal <- colorBin(palette = "Blues", domain = NULL, bins = breaks, na.color = "#FFFFFF")
-
-leaflet(data=filter(cases_by_country, cumCases!=0)) %>%
-  #setView(-3, 54.3, zoom = 5) %>% 
-  addTiles(urlTemplate = "",
-           attribution = 'Copyright Scottish Government, contains Ordnance Survey data © Crown copyright and database right (2019)', options = providerTileOptions(minZoom = 1, maxZoom = 13)) %>%
-  addPolygons(data = filter(cases_by_country, cumCases == 0), fillColor = "#FFFFFF", fillOpacity = 1, weight = 1, color = "#bdbdbd", label = ~cases_popup, labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"), textsize = "15px", direction = "auto"), highlightOptions = highlightOptions(color = "white", weight = 2, bringToFront = TRUE)) %>% 
-  addPolygons(fillColor = ~pal(cumCases), fillOpacity = 0.8, smoothFactor = 0.5, stroke = TRUE, weight = 1, color = "#bdbdbd", opacity = 1, label = ~cases_popup, labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"), textsize = "15px", direction = "auto"), highlightOptions = highlightOptions(color = "white", weight = 2, bringToFront = TRUE)) %>%
-  addLegend(pal=pal, values=~cumCases, position = "bottomleft", opacity = 0.8, title = "Latest total cumulative cases")
 
 
-
-#Other approach, not finished yet...
+#Map with cases
 library(geojsonio)
 africa <- geojson_read("Africa1.geojson", what="sp")
 
 africa@data %<>% left_join(maxima[,c(8:12)], by=c("ISO_A3"="countryterritoryCode"))
 
 
-library(cartography)
+
 breaks <- classIntervals(africa@data$cumCases, n = 8, style = "jenks", na.rm=T)$brks
 breaks <- c(0,breaks)
 breaks[2]<-1
@@ -102,7 +105,98 @@ choroLayer(spdf = africa, var = "cumCases", colNA = "grey",
 labelLayer(spdf=africa, txt = "cumCases",col= "black", cex = 0.9,halo = TRUE, bg = "white", r = 0.08, show.lines = T, overlap = F)
 title("Latest Cumulative Cases per Country")
 
-africa@data$cumCases
+
+#import WHO data and link to map-data
+who_data <- read_csv("Africa_2020-04-02.csv")
+africa@data %<>% left_join(who_data, by=c("ISO_A3"="countryterritoryCode"))
+
+breaks <- classIntervals(africa@data$total_cases, n = 8, style = "jenks", na.rm=T)$brks
+breaks <- c(0,breaks)
+breaks[2]<-1
+palblue <- brewer.pal(9, name = "Blues")
+palblue[1]<-"#FFFFFF"
+png(filename = "Map_cum_cases.png", width=1920, height=1240, pointsize = 22)
+choroLayer(spdf = africa, var = "total_cases", colNA = "grey", legend.nodata = "Non WHO-Africa country",
+           breaks=breaks, col=palblue,legend.title.txt = "Cumulative Cases", legend.title.cex = 1,
+           legend.values.cex = 1, legend.pos = c(-30,-40))
+dev.off()
+
+#labelLayer(spdf=africa, txt = "total_cases",col= "black", cex = 0.9,halo = TRUE, bg = "white", r = 0.08, show.lines = T, overlap = F)
+#title("Latest Cumulative Cases per Country")
+
+
+breaks <- classIntervals(africa@data$CaseperPop, n = 8, style = "jenks", na.rm=T)$brks
+breaks <- c(0,breaks)
+breaks[2]<-0.000001
+palblue <- brewer.pal(9, name = "Blues")
+palblue[1]<-"#FFFFFF"
+png(filename = "Map_cases_10k_pop.png", width=1920, height=1240, pointsize = 22)
+choroLayer(spdf = africa, var = "CaseperPop", colNA = "grey", legend.nodata = "Non WHO-Africa country",
+           breaks=breaks, col=palblue,legend.title.txt = "Cum. cases per 10k pop.", legend.title.cex = 1, 
+           legend.values.cex = 1, legend.values.rnd = 3, legend.pos = c(-30,-40))
+dev.off()
+
+
+breaks <- classIntervals(africa@data$total_deaths, n = 6, style = "jenks", na.rm=T)$brks
+breaks[2]<-1
+palred <- brewer.pal(7, name = "Reds")
+palred[1]<-"#FFFFFF"
+png(filename = "Map_cum_deaths.png", width=1920, height=1240, pointsize = 22)
+choroLayer(spdf = africa, var = "total_deaths", colNA = "grey", legend.nodata = "Non WHO-Africa country",
+           breaks=breaks, col=palred,legend.title.txt = "Cumulative Deaths", legend.title.cex = 1, 
+           legend.values.cex = 1, legend.values.rnd = 3, legend.pos = c(-30,-40))
+dev.off()
+
+
+breaks <- classIntervals(africa@data$DeathsperPop, n = 6, style = "jenks", na.rm=T)$brks
+breaks <- c(0,breaks)
+breaks[2]<-0.0000001
+palred <- brewer.pal(7, name = "Reds")
+palred[1]<-"#FFFFFF"
+png(filename = "Map_deaths_10k_pop.png", width=1920, height=1240, pointsize = 22)
+choroLayer(spdf = africa, var = "DeathsperPop", colNA = "grey", legend.nodata = "Non WHO-Africa country",
+           breaks=breaks, col=palred,legend.title.txt = "Cum. deaths per 10k pop.", legend.title.cex = 1, 
+           legend.values.cex = 1, legend.values.rnd = 3, legend.pos = c(-30,-40))
+dev.off()
+
+
+#Dt maps
+#Cases
+africa@data[,c(78,79)] <- NULL
+who_dt_data <- read_csv("Africa_Dts.csv")
+africa@data %<>% left_join(who_dt_data, by=c("ISO_A3"="countryterritoryCode"))
+
+breaks <- classIntervals(africa@data$Dt_cases, n = 9, style = "jenks", na.rm=T)$brks
+breaks[2]<-0.00001
+palgreen <- brewer.pal(9, name = "Greens")
+palgreen <- rev(palgreen)
+palgreen[1]<-"#FFFFFF"
+png(filename = "Map_dt_cases.png", width=1920, height=1240, pointsize = 22)
+choroLayer(spdf = africa, var = "Dt_cases", colNA = "grey", legend.nodata = "Non WHO-Africa country",
+           breaks=breaks, col=palgreen,legend.title.txt = "Doubling time cases (days)", legend.title.cex = 1, 
+           legend.values.cex = 1, legend.values.rnd = 3, legend.pos = c(-30,-40))
+dev.off()
+
+#Deaths
+breaks <- classIntervals(africa@data$Dt_deaths, n = 6, style = "jenks", na.rm=T)$brks
+breaks[2]<-0.00001
+palgreen <- brewer.pal(7, name = "Greens")
+palgreen <- rev(palgreen)
+palgreen[1]<-"#FFFFFF"
+png(filename = "Map_dt_deaths.png", width=1920, height=1240, pointsize = 22)
+choroLayer(spdf = africa, var = "Dt_deaths", colNA = "grey", legend.nodata = "Non WHO-Africa country",
+           breaks=breaks, col=palgreen,legend.title.txt = "Doubling time deaths (days)", legend.title.cex = 1, 
+           legend.values.cex = 1, legend.values.rnd = 3, legend.pos = c(-30,-40))
+dev.off()
+
+
+
+#Map with countries on WHO-Africa
+africa@data$WHOCountry <- ifelse(is.na(africa@data$Country),0,1)
+
+typoLayer(spdf = africa, var = "WHOCountry", col = c("skyblue", "white"), legend.pos = "n", )
+legendTypo(title.txt = "", col = c("skyblue","white"),  categ = c("Country included", "Country not included"),  nodata = FALSE, pos = c(-20,-30))
+
 
 #Dt calculations
 Dt_Cases = africa_data %>% group_by(countriesAndTerritories) %>% arrange(countriesAndTerritories,dateRep) %>% mutate(Dt=7*log(2)/log(nth(cumCases,-1)/nth(cumCases,-8))) %>% summarise(Dt=max(Dt))

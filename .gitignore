@@ -27,3 +27,6 @@ vignettes/*.pdf
 # R Environment Variables
 .Renviron
 Africa.Rproj
+test.pdf
+test.Rmd
+test.html
